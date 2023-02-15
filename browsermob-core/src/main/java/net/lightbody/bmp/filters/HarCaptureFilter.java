@@ -14,14 +14,8 @@ import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.handler.codec.http.cookie.ClientCookieDecoder;
 import io.netty.handler.codec.http.cookie.Cookie;
 import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
-import net.lightbody.bmp.core.har.Har;
-import net.lightbody.bmp.core.har.HarCookie;
-import net.lightbody.bmp.core.har.HarEntry;
-import net.lightbody.bmp.core.har.HarNameValuePair;
-import net.lightbody.bmp.core.har.HarPostData;
-import net.lightbody.bmp.core.har.HarPostDataParam;
-import net.lightbody.bmp.core.har.HarRequest;
-import net.lightbody.bmp.core.har.HarResponse;
+import net.lightbody.bmp.core.har.*;
+import net.lightbody.bmp.filters.util.ElasticSearchUtil;
 import net.lightbody.bmp.exception.UnsupportedCharsetException;
 import net.lightbody.bmp.filters.support.HttpConnectTiming;
 import net.lightbody.bmp.filters.util.HarCaptureUtil;
@@ -117,6 +111,8 @@ public class HarCaptureFilter extends HttpsAwareFiltersAdapter {
      */
     private volatile boolean addressResolved = false;
 
+    private volatile String esIndex;
+
     /**
      * Create a new instance of the HarCaptureFilter that will capture request and response information. If no har is specified in the
      * constructor, this filter will do nothing.
@@ -169,7 +165,6 @@ public class HarCaptureFilter extends HttpsAwareFiltersAdapter {
         }
 
         this.har = har;
-
         this.harEntry = new HarEntry(currentPageRef);
     }
 
@@ -185,7 +180,7 @@ public class HarCaptureFilter extends HttpsAwareFiltersAdapter {
             // link the object up now, before we make the request, so that if we get cut off (ie: favicon.ico request and browser shuts down)
             // we still have the attempt associated, even if we never got a response
             harEntry.setStartedDateTime(new Date());
-            har.getLog().addEntry(harEntry);
+            if (har.getElasticSearch() == null) har.getLog().addEntry(harEntry);
 
             HttpRequest httpRequest = (HttpRequest) httpObject;
             this.capturedOriginalRequest = httpRequest;
@@ -268,10 +263,27 @@ public class HarCaptureFilter extends HttpsAwareFiltersAdapter {
             }
 
             harEntry.getResponse().setBodySize(responseBodySize.get());
+
+
+            if (har.getElasticSearch() != null) saveES();
         }
 
         return super.serverToProxyResponse(httpObject);
     }
+
+    public void saveES() {
+        HarRequest reuqest = harEntry.getRequest();
+        HarResponse response = harEntry.getResponse();
+        boolean requestIsJSON = reuqest.getHeaders().stream().filter(headers -> "Content-Type".equals(headers.getName())
+                && headers.getValue().contains("application/json")).count() > 0;
+        boolean responseIsJSON = response.getHeaders().stream().filter(headers -> "Content-Type".equals(headers.getName())
+                && headers.getValue().contains("application/json")).count() > 0;
+
+        if (requestIsJSON || responseIsJSON) {
+            new ElasticSearchUtil(har).add(harEntry.getRequest(), harEntry.getResponse());
+        }
+    }
+
 
     @Override
     public void serverToProxyResponseTimedOut() {

@@ -71,6 +71,11 @@ public class Main {
         ServletContextHandler context = (ServletContextHandler) server.getHandler();
         gscl.contextInitialized(new ServletContextEvent(context.getServletContext()));
 
+        LogHolder.log.info("Create public proxy");
+        ProxyManager proxyManager = injector.getInstance(ProxyManager.class);
+        new ProxyResource(proxyManager).createNewProxy(null, null, null, null, null,
+                null, true, true, "public", "public");
+
         try {
             server.join();
         } catch (InterruptedException e) {

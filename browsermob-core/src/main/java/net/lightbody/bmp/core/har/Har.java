@@ -13,6 +13,8 @@ public class Har {
 
     private volatile HarLog log;
 
+    private volatile HarElasticSearch elasticSearch;
+
     public Har() {
     }
 
@@ -26,6 +28,14 @@ public class Har {
 
     public void setLog(HarLog log) {
         this.log = log;
+    }
+
+    public void setElasticSearch(HarElasticSearch elasticSearch) {
+        this.elasticSearch = elasticSearch;
+    }
+
+    public HarElasticSearch getElasticSearch() {
+        return elasticSearch;
     }
 
     public void writeTo(Writer writer) throws IOException {

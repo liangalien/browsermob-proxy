@@ -14,7 +14,7 @@
 
     <properties>
         <unit-test-jetty.version>7.6.16.v20140903</unit-test-jetty.version>
-        <use.littleproxy>true</use.littleproxy>
+        <use.littleproxy>true</use.littleproxy> 
     </properties>
 
     <build>
@@ -28,6 +28,14 @@
                         <!-- Execute tests against the LP version unless the legacy profile is explicitly specified. -->
                         <bmp.use.littleproxy>${use.littleproxy}</bmp.use.littleproxy>
                     </systemProperties>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>8</source>
+                    <target>8</target>
                 </configuration>
             </plugin>
         </plugins>
@@ -118,28 +126,24 @@
             <artifactId>mockito-core</artifactId>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>
-            <version>${unit-test-jetty.version}</version>
+            <version>7.3.0.v20110203</version>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-servlet</artifactId>
-            <version>${unit-test-jetty.version}</version>
+            <version>7.3.0.v20110203</version>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-servlets</artifactId>
-            <version>${unit-test-jetty.version}</version>
+            <artifactId>jetty-server</artifactId>
+            <version>7.6.16.v20140903</version>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 
     <profiles>

@@ -1,5 +1,24 @@
 # BrowserMob Proxy
 
+####新增特性
+#####1、启动时添加下述参数，将请求记录保存到elasticsearch
+`java -Des.host=0.0.0.0 [-Des.port=9200] -Des.user=elastic -Des.password=elastic -jar lib/browsermob-dist-2.1.6-SNAPSHOT.jar`
+#####2、启动时默认新增8081代理地址
+```bash
+[2023-02-15 16:11:24.377] [net.lightbody.bmp.proxy.Main:54] [main] [INFO] - Starting BrowserMob Proxy version 2.1.6-SNAPSHOT
+[2023-02-15 16:11:24.439] [org.eclipse.jetty.util.log:55] [main] [INFO] - jetty-7.3.0.v20110203
+[2023-02-15 16:11:24.489] [org.eclipse.jetty.util.log:55] [main] [INFO] - started o.e.j.s.ServletContextHandler{/,null}
+[2023-02-15 16:11:24.610] [org.eclipse.jetty.util.log:55] [main] [INFO] - Started SelectChannelConnector@0.0.0.0:8080
+[2023-02-15 16:11:24.613] [net.lightbody.bmp.proxy.Main:74] [main] [INFO] - Create public proxy
+[2023-02-15 16:11:25.219] [net.lightbody.bmp.proxy.ProxyManager:140] [main] [INFO] - Using Elliptic Curve Cryptography for certificate impersonation
+[2023-02-15 16:11:26.660] [org.littleshoot.proxy.impl.DefaultHttpProxyServer:495] [main] [INFO] - Starting proxy at address: 0.0.0.0/0.0.0.0:8081
+[2023-02-15 16:11:26.715] [org.littleshoot.proxy.impl.DefaultHttpProxyServer:524] [main] [INFO] - Proxy listening with TCP transport
+[2023-02-15 16:11:29.097] [org.littleshoot.proxy.impl.DefaultHttpProxyServer:559] [main] [INFO] - Proxy started at address: /0:0:0:0:0:0:0:0:8081
+```
+
+------------------------------------------------------------------------------------
+
+
 BrowserMob Proxy allows you to manipulate HTTP requests and responses, capture HTTP content, and export performance data as a [HAR file](http://www.softwareishard.com/blog/har-12-spec/).
 BMP works well as a standalone proxy server, but it is especially useful when embedded in Selenium tests.
 

@@ -8,13 +8,13 @@ configuration:
       name: console
       target: SYSTEM_OUT
       PatternLayout:
-        pattern: "[%-5level %date{ISO8601} %logger] (%thread) %msg %xThrowable%n"
+        pattern: "[%date{yyyy-MM-dd HH:mm:ss.SSS}] [%logger:%L] [%t] [%level] - %msg%n"
     file:
       -
         name: file
         fileName: bmp.log
         PatternLayout:
-          pattern: "[%-5level %date{ISO8601} %logger] (%thread) %msg %xThrowable%n"
+          pattern: "[%date{yyyy-MM-dd HH:mm:ss.SSS}] [%logger:%L] [%t] [%level] - %msg%n"
         append: false
   loggers:
     logger:

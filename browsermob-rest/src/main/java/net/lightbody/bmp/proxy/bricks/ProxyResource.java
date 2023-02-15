@@ -15,6 +15,8 @@ import com.google.sitebricks.http.Put;
 import net.lightbody.bmp.BrowserMobProxy;
 import net.lightbody.bmp.BrowserMobProxyServer;
 import net.lightbody.bmp.core.har.Har;
+import net.lightbody.bmp.core.har.HarElasticSearch;
+import net.lightbody.bmp.core.har.HarLog;
 import net.lightbody.bmp.exception.ProxyExistsException;
 import net.lightbody.bmp.exception.ProxyPortsExhaustedException;
 import net.lightbody.bmp.exception.UnsupportedCharsetException;
@@ -72,11 +74,46 @@ public class ProxyResource {
 
     @Post
     public Reply<?> newProxy(Request<String> request) {
-        String systemProxyHost = System.getProperty("http.proxyHost");
-        String systemProxyPort = System.getProperty("http.proxyPort");
         String httpProxy = request.param("httpProxy");
         String proxyUsername = request.param("proxyUsername");
         String proxyPassword = request.param("proxyPassword");
+        String paramBindAddr = request.param("bindAddress");
+        String paramServerBindAddr = request.param("serverBindAddress");
+        Integer paramPort = request.param("port") == null ? null : Integer.parseInt(request.param("port"));
+
+        String useEccString = request.param("useEcc");
+        boolean useEcc = Boolean.parseBoolean(useEccString);
+
+        String trustAllServersString = request.param("trustAllServers");
+        boolean trustAllServers = Boolean.parseBoolean(trustAllServersString);
+
+        String initialPageRef = request.param("initialPageRef");
+        String initialPageTitle = request.param("initialPageTitle");
+
+        try {
+            LegacyProxyServer proxy = createNewProxy(httpProxy, proxyUsername, proxyPassword, paramBindAddr, paramServerBindAddr, paramPort,
+                    useEcc, trustAllServers, initialPageRef, initialPageTitle
+            );
+            return Reply.with(new ProxyDescriptor(proxy.getPort())).as(Json.class);
+
+        } catch (ProxyExistsException ex) {
+            return Reply.with(new ProxyDescriptor(ex.getPort())).status(455).as(Json.class);
+        } catch (ProxyPortsExhaustedException ex) {
+            return Reply.saying().status(456);
+        } catch (Exception ex) {
+            StringWriter s = new StringWriter();
+            ex.printStackTrace(new PrintWriter(s));
+            return Reply.with(s).as(Text.class).status(550);
+        }
+
+    }
+
+    public LegacyProxyServer createNewProxy(String httpProxy, String proxyUsername, String proxyPassword,
+                              String bindAddr, String serverBindAddr, Integer port,
+                              boolean useEcc, boolean trustAllServers,
+                              String initialPageRef, String initialPageTitle) {
+        String systemProxyHost = System.getProperty("http.proxyHost");
+        String systemProxyPort = System.getProperty("http.proxyPort");
 
         Hashtable<String, String> options = new Hashtable<String, String>();
 
@@ -93,31 +130,27 @@ public class ProxyResource {
             options.put("proxyPassword", proxyPassword);
         }
 
-        String paramBindAddr = request.param("bindAddress");
-        String paramServerBindAddr = request.param("serverBindAddress");
-        Integer paramPort = request.param("port") == null ? null : Integer.parseInt(request.param("port"));
-
-        String useEccString = request.param("useEcc");
-        boolean useEcc = Boolean.parseBoolean(useEccString);
-
-        String trustAllServersString = request.param("trustAllServers");
-        boolean trustAllServers = Boolean.parseBoolean(trustAllServersString);
-
         LOG.debug("POST proxy instance on bindAddress `{}` & port `{}` & serverBindAddress `{}`",
-                paramBindAddr, paramPort, paramServerBindAddr);
-        LegacyProxyServer proxy;
-        try {
-            proxy = proxyManager.create(options, paramPort, paramBindAddr, paramServerBindAddr, useEcc, trustAllServers);
-        } catch (ProxyExistsException ex) {
-            return Reply.with(new ProxyDescriptor(ex.getPort())).status(455).as(Json.class);
-        } catch (ProxyPortsExhaustedException ex) {
-            return Reply.saying().status(456);
-        } catch (Exception ex) {
-            StringWriter s = new StringWriter();
-            ex.printStackTrace(new PrintWriter(s));
-            return Reply.with(s).as(Text.class).status(550);
+                bindAddr, port, serverBindAddr);
+        LegacyProxyServer proxy = proxyManager.create(options, port, bindAddr, serverBindAddr, useEcc, trustAllServers);
+        proxy.setCaptureHeaders(true);
+        proxy.setCaptureContent(true);
+
+        proxy.newHar(initialPageRef, initialPageTitle);
+
+        String esHost = System.getProperty("es.host");
+        String esPort = System.getProperty("es.port");
+        if (esHost != null) {
+            HarElasticSearch harElasticSearch = new HarElasticSearch();
+            harElasticSearch.setHost(esHost);
+            harElasticSearch.setPort(esPort != null ? Integer.parseInt(esPort) : 9200);
+            harElasticSearch.setUser(System.getProperty("es.user"));
+            harElasticSearch.setPassword(System.getProperty("es.password"));
+
+            proxy.getHar().setElasticSearch(harElasticSearch);
         }
-        return Reply.with(new ProxyDescriptor(proxy.getPort())).as(Json.class);
+
+        return proxy;
     }
 
     @Get
@@ -128,9 +161,9 @@ public class ProxyResource {
             return Reply.saying().notFound();
         }
 
-        Har har = proxy.getHar();
+        HarLog harLog = proxy.getHar().getLog();
 
-        return Reply.with(har).as(Json.class);
+        return Reply.with(harLog).as(Json.class);
     }
 
     @Put
