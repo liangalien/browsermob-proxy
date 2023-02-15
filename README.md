@@ -3,6 +3,7 @@
 ####新增特性
 #####1、启动时添加下述参数，将请求记录保存到elasticsearch
 `java -Des.host=0.0.0.0 [-Des.port=9200] -Des.user=elastic -Des.password=elastic -jar lib/browsermob-dist-2.1.6-SNAPSHOT.jar`
+
 #####2、启动时默认新增8081代理地址
 ```bash
 [2023-02-15 16:11:24.377] [net.lightbody.bmp.proxy.Main:54] [main] [INFO] - Starting BrowserMob Proxy version 2.1.6-SNAPSHOT
