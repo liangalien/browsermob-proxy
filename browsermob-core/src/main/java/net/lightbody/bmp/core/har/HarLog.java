@@ -57,6 +57,14 @@ public class HarLog {
         return entries;
     }
 
+    public void clearEntries() {
+        entries.clear();
+    }
+
+    public void addAllEntries(List<HarEntry> entries) {
+        this.entries.addAll(entries);
+    }
+
     public String getComment() {
         return comment;
     }

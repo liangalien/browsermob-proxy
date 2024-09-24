@@ -1,5 +1,7 @@
 package net.lightbody.bmp.proxy.bricks;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.google.sitebricks.At;
@@ -14,9 +16,7 @@ import com.google.sitebricks.http.Post;
 import com.google.sitebricks.http.Put;
 import net.lightbody.bmp.BrowserMobProxy;
 import net.lightbody.bmp.BrowserMobProxyServer;
-import net.lightbody.bmp.core.har.Har;
-import net.lightbody.bmp.core.har.HarElasticSearch;
-import net.lightbody.bmp.core.har.HarLog;
+import net.lightbody.bmp.core.har.*;
 import net.lightbody.bmp.exception.ProxyExistsException;
 import net.lightbody.bmp.exception.ProxyPortsExhaustedException;
 import net.lightbody.bmp.exception.UnsupportedCharsetException;
@@ -45,11 +45,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.Map;
+import java.util.*;
 
 @At("/proxy")
 @Service
@@ -164,6 +160,42 @@ public class ProxyResource {
         HarLog harLog = proxy.getHar().getLog();
 
         return Reply.with(harLog).as(Json.class);
+    }
+
+    @Get
+    @At("/:port/har/headers")
+    public Reply<?> getHarHeaders(@Named("port") int port, Request<String> request) {
+        LegacyProxyServer proxy = proxyManager.get(port);
+        if (proxy == null) {
+            return Reply.saying().notFound();
+        }
+        String referer = request.param("referer");
+
+        JSONArray allHeaders = new JSONArray();
+
+        HarLog harLog = proxy.getHar().getLog();
+        if (harLog != null) {
+            for (HarEntry entry : harLog.getEntries()) {
+                if (entry == null) continue;
+                JSONObject entryHeaders = new JSONObject();
+                for (HarNameValuePair headers :  entry.getRequest().getHeaders()) {
+                    if (headers.getName() != null && headers.getValue() != null
+                            && !"".equals(headers.getName().trim()) && !"".equals(headers.getValue().trim())) {
+                        entryHeaders.put(headers.getName().trim(), headers.getValue().trim());
+                    }
+                }
+                if (!entryHeaders.isEmpty()) {
+                    if (referer == null || entryHeaders.getString("Referer") == null
+                            || entryHeaders.getString("Referer").indexOf(referer) == -1) {
+                        continue;
+                    }
+
+                    allHeaders.add(entryHeaders);
+                }
+            }
+        }
+
+        return Reply.with(allHeaders).as(Json.class);
     }
 
     @Put

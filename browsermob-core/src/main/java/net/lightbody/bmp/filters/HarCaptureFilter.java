@@ -180,7 +180,19 @@ public class HarCaptureFilter extends HttpsAwareFiltersAdapter {
             // link the object up now, before we make the request, so that if we get cut off (ie: favicon.ico request and browser shuts down)
             // we still have the attempt associated, even if we never got a response
             harEntry.setStartedDateTime(new Date());
-            if (har.getElasticSearch() == null) har.getLog().addEntry(harEntry);
+            if (har.getElasticSearch() == null) {
+                if (System.getProperty("har.entry.max") != null) {
+                    int entryMax = Integer.parseInt(System.getProperty("har.entry.max"));
+                    List<HarEntry> entries = har.getLog().getEntries();
+                    if (entries.size() > entryMax) {
+                        List<HarEntry> subEntries = entries.subList(entries.size() - entryMax, entries.size());
+                        har.getLog().clearEntries();
+                        har.getLog().addAllEntries(subEntries);
+                    }
+                }
+
+                har.getLog().addEntry(harEntry);
+            }
 
             HttpRequest httpRequest = (HttpRequest) httpObject;
             this.capturedOriginalRequest = httpRequest;

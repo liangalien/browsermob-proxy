@@ -10,6 +10,7 @@ import org.littleshoot.proxy.HttpFiltersAdapter;
 /**
  * Registers this request with the {@link net.lightbody.bmp.proxy.ActivityMonitor} when the HttpRequest is received from the client.
  */
+
 public class RegisterRequestFilter extends HttpFiltersAdapter {
     private final ActivityMonitor activityMonitor;
 
